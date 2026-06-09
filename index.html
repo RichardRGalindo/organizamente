@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OrganizaMente</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:system-ui,-apple-system,sans-serif;min-height:100vh;transition:background .3s,color .3s}
+select,input,textarea,button{font-family:inherit}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{border-radius:99px;background:#c7d2fe}
+a:focus,button:focus,input:focus,select:focus,textarea:focus{outline:3px solid #6366f1;outline-offset:2px}
+@keyframes pulse-sos{0%,100%{box-shadow:0 6px 24px rgba(244,63,94,.45)}50%{box-shadow:0 8px 36px rgba(244,63,94,.7)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastIn{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(60px)}}
+.fade-in{animation:fadeIn .3s ease both}
+.scale-in{animation:scaleIn .25s ease both}
+.slide-up{animation:slideUp .35s ease both}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useMemo, useEffect, useCallback } = React;
+
+/* ── Icons ── */
+const Ic = ({ paths, size=18, color="currentColor", sw=2, style:st, ...r }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+    stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"
+    aria-hidden="true" style={st} {...r}>
+    {paths.map((d,i)=><path key={i} d={d}/>)}
+  </svg>
+);
+const IBrain    = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z","M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z","M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4","M17.599 6.5a3 3 0 0 0 .399-1.375","M6.003 5.125A3 3 0 0 0 6.401 6.5","M3.477 10.896a4 4 0 0 1 .585-.396","M19.938 10.5a4 4 0 0 1 .585.396","M6 18a4 4 0 0 1-1.967-.516","M19.967 17.484A4 4 0 0 1 18 18"]}/>;
+const IHeart    = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"]}/>;
+const ICheck    = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M9 11l3 3L22 4","M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"]}/>;
+const ISquare   = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M3 3h18v18H3z"]}/>;
+const IBook     = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z","M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"]}/>;
+const ITrash    = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M3 6h18","M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6","M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2","M10 11v6","M14 11v6"]}/>;
+const IPlus     = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M5 12h14","M12 5v14"]}/>;
+const ISave     = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z","M17 21v-8H7v8","M7 3v5h8"]}/>;
+const IWind     = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2","M9.6 4.6A2 2 0 1 1 11 8H2","M12.6 19.4A2 2 0 1 0 14 16H2"]}/>;
+const IX        = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M18 6 6 18","M6 6l12 12"]}/>;
+const IAlert    = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z","M12 9v4","M12 17h.01"]}/>;
+const ITarget   = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z","M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12z","M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"]}/>;
+const ICalendar = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M8 2v4","M16 2v4","M3 10h18","M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"]}/>;
+const ISearch   = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M21 21l-4.35-4.35","M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"]}/>;
+const IBar      = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M18 20V10","M12 20V4","M6 20v-6"]}/>;
+const IStar     = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"]}/>;
+const IEdit     = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"]}/>;
+const IMoon     = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"]}/>;
+const ISun      = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M12 1v2","M12 21v2","M4.22 4.22l1.42 1.42","M18.36 18.36l1.42 1.42","M1 12h2","M21 12h2","M4.22 19.78l1.42-1.42","M18.36 5.64l1.42-1.42","M12 5a7 7 0 1 0 0 14A7 7 0 0 0 12 5z"]}/>;
+const ISettings = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z","M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"]}/>;
+const IHelp     = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z","M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3","M12 17h.01"]}/>;
+const IChevL    = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M15 18l-6-6 6-6"]}/>;
+const IChevR    = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M9 18l6-6-6-6"]}/>;
+const IOk       = ({s,c,style}) => <Ic size={s||18} color={c} style={style} paths={["M20 6L9 17l-5-5"]}/>;
+
+/* ── Constants ── */
+const MOODS = [
+  { id:"feliz",      emoji:"😊", label:"Feliz",      col:"#f59e0b", bg:"#fffbeb", border:"#fcd34d", text:"#92400e", alert:false, msg:"Que energia incrível! ☀️ Aproveite para avançar nas tarefas mais desafiadoras.", rec:"Ideal para estudar conteúdos difíceis e resolver problemas complexos." },
+  { id:"calmo",      emoji:"😌", label:"Calmo",      col:"#0ea5e9", bg:"#f0f9ff", border:"#7dd3fc", text:"#075985", alert:false, msg:"Perfeito para o foco! 🌊 Esse estado é ideal para absorver conteúdo.", rec:"Ótimo para leituras longas, resumos e revisão de matéria." },
+  { id:"ansioso",    emoji:"😰", label:"Ansioso",    col:"#f97316", bg:"#fff7ed", border:"#fdba74", text:"#9a3412", alert:true,  msg:"Tudo bem sentir isso. 🌿 Ansiedade é sinal de que você se importa.", rec:"Comece pela tarefa mais simples. Use o SOS se precisar de uma pausa." },
+  { id:"exausto",    emoji:"😴", label:"Exausto",    col:"#8b5cf6", bg:"#f5f3ff", border:"#c4b5fd", text:"#4c1d95", alert:true,  msg:"Seu corpo está pedindo descanso. 💤 Uma pausa agora é produtividade amanhã.", rec:"Faça uma pausa de 20 min antes de estudar. Hidrate-se." },
+  { id:"estressado", emoji:"😤", label:"Estressado", col:"#f43f5e", bg:"#fff1f2", border:"#fda4af", text:"#9f1239", alert:true,  msg:"Respira. 🤝 O estresse passa. Priorize o essencial.", rec:"Use o exercício de respiração e depois reveja suas prioridades." },
+];
+const CATS = ["Estudos","Trabalho","Pessoal"];
+const PRIS = ["Alta","Média","Baixa"];
+const PRI_ORDER = { Alta:0, Média:1, Baixa:2 };
+const CAT_S = { Estudos:{bg:"#dbeafe",c:"#1d4ed8"}, Trabalho:{bg:"#ede9fe",c:"#6d28d9"}, Pessoal:{bg:"#ccfbf1",c:"#0f766e"} };
+const PRI_S  = { Alta:{bg:"#fee2e2",c:"#b91c1c"}, Média:{bg:"#fef9c3",c:"#a16207"}, Baixa:{bg:"#dcfce7",c:"#15803d"} };
+const PHASES = [
+  { id:"inspire", label:"Inspire", dur:4, hint:"Inspire lentamente pelo nariz..." },
+  { id:"hold",    label:"Segure",  dur:7, hint:"Segure o ar com calma..." },
+  { id:"expire",  label:"Expire",  dur:8, hint:"Expire lentamente pela boca..." },
+];
+const MOTIVATIONAL = [
+  "Você é mais capaz do que imagina. 💪","Cada tarefa concluída é uma vitória. 🏆",
+  "Pequenos passos levam a grandes conquistas. 🚀","Foque no progresso, não na perfeição. ✨",
+  "Você está exatamente onde precisa estar. 🌱","Acredite no seu potencial. 🌟",
+];
+const NAV = [
+  { id:"dashboard", label:"Início",    emoji:"🏠" },
+  { id:"tasks",     label:"Tarefas",   emoji:"✅" },
+  { id:"plan",      label:"Planner",   emoji:"📅" },
+  { id:"goals",     label:"Metas",     emoji:"🎯" },
+  { id:"journal",   label:"Diário",    emoji:"📖" },
+  { id:"stats",     label:"Histórico", emoji:"📊" },
+];
+const ACCENT_COLORS = [
+  { name:"Índigo", val:"#6366f1", grad:"linear-gradient(135deg,#6366f1,#8b5cf6)" },
+  { name:"Rosa",   val:"#ec4899", grad:"linear-gradient(135deg,#ec4899,#f43f5e)" },
+  { name:"Teal",   val:"#0d9488", grad:"linear-gradient(135deg,#0d9488,#2dd4bf)" },
+  { name:"Âmbar",  val:"#d97706", grad:"linear-gradient(135deg,#d97706,#f59e0b)" },
+  { name:"Verde",  val:"#16a34a", grad:"linear-gradient(135deg,#16a34a,#4ade80)" },
+];
+const ONBOARDING_STEPS = [
+  { emoji:"🏠", title:"Dashboard",  desc:"Veja um resumo do seu dia: humor, tarefas urgentes, progresso e metas — tudo em um lugar." },
+  { emoji:"✅", title:"Tarefas",    desc:"Adicione, filtre e organize tarefas por categoria e prioridade. Tarefas urgentes ficam em destaque." },
+  { emoji:"📅", title:"Planner",    desc:"Planeje sua semana dia a dia e defina a meta principal do mês." },
+  { emoji:"🎯", title:"Metas",      desc:"Defina metas semanais e acompanhe o progresso com um anel visual." },
+  { emoji:"📖", title:"Diário",     desc:"Esvazie a mente escrevendo livremente. Seus relatos ficam salvos no histórico." },
+  { emoji:"📊", title:"Histórico",  desc:"Veja gráficos de produtividade e seu histórico emocional ao longo do tempo." },
+  { emoji:"🆘", title:"Botão SOS", desc:"O botão vermelho no canto inferior inicia um exercício de respiração 4-7-8 para acalmar a ansiedade." },
+];
+
+const nowStr   = () => new Date().toLocaleString("pt-BR");
+const todayKey = () => new Date().toLocaleDateString("pt-BR");
+
+/* ── Ring ── */
+function Ring({ pct, size=64, stroke=6, color="#6366f1" }) {
+  const r = size/2 - stroke;
+  const circ = 2*Math.PI*r;
+  return (
+    <svg width={size} height={size} viewBox={"0 0 "+size+" "+size} aria-label={pct+"% concluído"} role="img">
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#e2e8f0" strokeWidth={stroke}/>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+        strokeDasharray={circ} strokeDashoffset={circ*(1-pct/100)}
+        strokeLinecap="round" transform={"rotate(-90 "+(size/2)+" "+(size/2)+")"}
+        style={{transition:"stroke-dashoffset .6s ease"}}/>
+      <text x="50%" y="50%" textAnchor="middle" dy=".35em" fontSize={size*.22} fontWeight="700" fill="currentColor">{pct}%</text>
+    </svg>
+  );
+}
+
+/* ══════════════════════════════
+   SUBCOMPONENTS — defined OUTSIDE App
+   to avoid hook-rule violations
+   ══════════════════════════════ */
+
+function Dashboard({ th, accent, mood, tasks, wGoals, userName, selectMood, toggleTask, MOTIVATIONAL, motivIdx }) {
+  const done    = tasks.filter(t => t.done).length;
+  const total   = tasks.length;
+  const pct     = total ? Math.round((done/total)*100) : 0;
+  const pending = tasks.filter(t => !t.done);
+  const urgent  = pending.filter(t => t.pri==="Alta");
+  const wl = pending.length<=2 ? {label:"Leve ✅",    bg:"#dcfce7",c:"#15803d"}
+           : pending.length<=4 ? {label:"Moderada ⚠️",bg:"#fef9c3",c:"#a16207"}
+           :                     {label:"Crítica 🚨",  bg:"#fee2e2",c:"#b91c1c"};
+  const card = { background:th.surface, borderRadius:20, border:"1px solid "+th.border, padding:24, marginBottom:16 };
+  const tagS = (bg,c) => ({ fontSize:11, padding:"2px 9px", borderRadius:99, fontWeight:600, background:bg, color:c, display:"inline-block" });
+  return (
+    <div className="fade-in">
+      <div style={{...card, background:accent.grad, border:"none", color:"#fff", padding:28}}>
+        <p style={{fontSize:13,opacity:.85,marginBottom:4}}>📅 {new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"})}</p>
+        <h2 style={{fontSize:22,fontWeight:800,marginBottom:6}}>{userName ? "Olá, "+userName+"! 👋" : "Olá! Como você está hoje? 👋"}</h2>
+        <p style={{fontSize:14,opacity:.9,lineHeight:1.6}}>{MOTIVATIONAL[motivIdx]}</p>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+        <div style={{...card,marginBottom:0,textAlign:"center"}}>
+          <p style={{fontSize:11,color:th.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:".06em",marginBottom:8}}>Progresso</p>
+          <div style={{display:"flex",justifyContent:"center",marginBottom:8}}><Ring pct={pct} size={72} stroke={7} color={accent.val}/></div>
+          <p style={{fontSize:12,color:th.sub}}>{done} de {total} tarefas</p>
+        </div>
+        <div style={{...card,marginBottom:0}}>
+          <p style={{fontSize:11,color:th.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:".06em",marginBottom:8}}>Carga Mental</p>
+          <span style={{fontSize:13,fontWeight:700,padding:"5px 12px",borderRadius:99,background:wl.bg,color:wl.c,display:"inline-block",marginBottom:8}}>{wl.label}</span>
+          <p style={{fontSize:12,color:th.sub}}>{pending.length} pendentes</p>
+          {urgent.length>0 && <p style={{fontSize:11,color:"#ef4444",fontWeight:600,marginTop:4}} aria-live="polite">{"⚠️ "+urgent.length+" urgente"+(urgent.length>1?"s":"")}</p>}
+        </div>
+      </div>
+      <div style={card}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+          <IHeart s={17} c="#fb7185"/>
+          <span style={{fontSize:14,fontWeight:700,color:th.text}}>Como está sua mente hoje?</span>
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:mood?14:0}} role="group" aria-label="Selecionar humor">
+          {MOODS.map(m => {
+            const active = mood && mood.id===m.id;
+            return (
+              <button key={m.id} aria-label={"Humor: "+m.label} aria-pressed={active}
+                onClick={() => selectMood(active ? null : m)}
+                style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"10px 14px",
+                  borderRadius:14,border:"2px solid "+(active?m.col:th.border),
+                  background:active?m.bg:th.hover,cursor:"pointer",
+                  transform:active?"scale(1.06)":"scale(1)",transition:"all .2s",outline:"none",
+                  boxShadow:active?"0 4px 14px "+m.col+"33":"none"}}>
+                <span style={{fontSize:22}}>{m.emoji}</span>
+                <span style={{fontSize:11,fontWeight:600,color:active?m.col:th.sub}}>{m.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        {mood && (
+          <div className="fade-in" style={{borderRadius:14,padding:16,border:"1.5px solid "+mood.border,background:mood.bg}} aria-live="polite">
+            {mood.alert && <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,fontWeight:700,textTransform:"uppercase",color:mood.text,opacity:.75,marginBottom:8}}><IAlert s={13}/> Atenção: priorize o essencial agora.</div>}
+            <p style={{fontSize:14,lineHeight:1.7,margin:"0 0 8px",color:mood.text}}>{mood.msg}</p>
+            <p style={{fontSize:12,color:mood.text,opacity:.8,fontStyle:"italic",margin:0}}>{"💡 "+mood.rec}</p>
+          </div>
+        )}
+      </div>
+      {urgent.length>0 && (
+        <div style={card}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+            <IAlert s={17} c="#ef4444"/>
+            <span style={{fontSize:14,fontWeight:700,color:th.text}}>Tarefas Urgentes</span>
+          </div>
+          {urgent.slice(0,3).map(t => (
+            <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:12,border:"1.5px solid #fee2e2",background:"#fff5f5",marginBottom:8}}>
+              <button onClick={() => toggleTask(t.id)} aria-label="Concluir tarefa" style={{background:"none",border:"none",cursor:"pointer",color:"#ef4444",padding:0,display:"flex"}}><ISquare s={18}/></button>
+              <span style={{flex:1,fontSize:14,color:"#334155",fontWeight:500}}>{t.title}</span>
+              <span style={tagS(CAT_S[t.cat].bg,CAT_S[t.cat].c)}>{t.cat}</span>
+            </div>
+          ))}
+          {urgent.length>3 && <p style={{fontSize:12,color:th.muted,marginTop:4}}>{"+"+(urgent.length-3)+" mais urgentes"}</p>}
+        </div>
+      )}
+      {wGoals.length>0 && (
+        <div style={card}>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+            <ITarget s={17} c={accent.val}/>
+            <span style={{fontSize:14,fontWeight:700,color:th.text}}>Metas da Semana</span>
+          </div>
+          {wGoals.slice(0,3).map(g => (
+            <div key={g.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+              <span style={{fontSize:14}}>{g.done?"✅":"⭕"}</span>
+              <span style={{fontSize:13,color:g.done?th.muted:th.text,textDecoration:g.done?"line-through":"none"}}>{g.text}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Tasks({ th, accent, tasks, tTitle, setTTitle, tCat, setTCat, tPri, setTPri, tDate, setTDate, search, setSearch, fCat, setFCat, fPri, setFPri, addTask, toggleTask, delTask, filteredTasks }) {
+  const done    = tasks.filter(t => t.done).length;
+  const total   = tasks.length;
+  const pct     = total ? Math.round((done/total)*100) : 0;
+  const pending = tasks.filter(t => !t.done);
+  const wl = pending.length<=2 ? {label:"Leve ✅",    bg:"#dcfce7",c:"#15803d"}
+           : pending.length<=4 ? {label:"Moderada ⚠️",bg:"#fef9c3",c:"#a16207"}
+           :                     {label:"Crítica 🚨",  bg:"#fee2e2",c:"#b91c1c"};
+  const card = { background:th.surface, borderRadius:20, border:"1px solid "+th.border, padding:24, marginBottom:16 };
+  const inp  = { width:"100%", padding:"11px 14px", borderRadius:12, border:"1.5px solid "+th.border, fontSize:14, color:th.text, outline:"none", boxSizing:"border-box", background:th.input };
+  const btnS = (bg, shadow) => ({ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", background:bg, color:"#fff", borderRadius:12, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:shadow||"none" });
+  const tagS = (bg,c) => ({ fontSize:11, padding:"2px 9px", borderRadius:99, fontWeight:600, background:bg, color:c, display:"inline-block" });
+  const selectSt = { padding:"9px 10px", borderRadius:10, border:"1.5px solid "+th.border, fontSize:13, color:th.text, background:th.input, outline:"none" };
+  return (
+    <div className="fade-in">
+      <div style={card}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <ICheck s={18} c={accent.val}/>
+            <span style={{fontSize:15,fontWeight:700,color:th.text}}>Gerenciador de Tarefas</span>
+          </div>
+          <span style={{fontSize:12,padding:"5px 12px",borderRadius:99,fontWeight:600,background:wl.bg,color:wl.c}} aria-live="polite">{wl.label}</span>
+        </div>
+        <div style={{marginBottom:18}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+            <span style={{fontSize:12,color:th.sub}}>Progresso geral</span>
+            <span style={{fontSize:12,fontWeight:700,color:accent.val}} aria-live="polite">{pct}% concluído</span>
+          </div>
+          <div style={{background:th.border,borderRadius:99,height:8,overflow:"hidden"}} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Progresso das tarefas">
+            <div style={{height:"100%",background:accent.grad,width:pct+"%",transition:"width .6s ease",borderRadius:99}}/>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+            <span style={{fontSize:11,color:th.muted}}>{done} concluídas</span>
+            <span style={{fontSize:11,color:th.muted}}>{pending.length} pendentes</span>
+          </div>
+        </div>
+        <fieldset style={{background:th.hover,borderRadius:14,padding:16,marginBottom:18,border:"1px solid "+th.border}}>
+          <legend style={{fontSize:12,fontWeight:700,color:accent.val,textTransform:"uppercase",letterSpacing:".06em",padding:"0 6px"}}>Nova Tarefa</legend>
+          <input value={tTitle} onChange={e=>setTTitle(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addTask()}
+            placeholder="Título da tarefa..." aria-label="Título da tarefa" id="taskTitle"
+            style={{...inp,marginBottom:8,marginTop:8}}/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+            <div>
+              <label htmlFor="tCat" style={{fontSize:11,color:th.muted,display:"block",marginBottom:3}}>Categoria</label>
+              <select id="tCat" value={tCat} onChange={e=>setTCat(e.target.value)} style={{...selectSt,width:"100%"}}>
+                {CATS.map(c=><option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="tPri" style={{fontSize:11,color:th.muted,display:"block",marginBottom:3}}>Prioridade</label>
+              <select id="tPri" value={tPri} onChange={e=>setTPri(e.target.value)} style={{...selectSt,width:"100%"}}>
+                {PRIS.map(p=><option key={p}>{p}</option>)}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="tDate" style={{fontSize:11,color:th.muted,display:"block",marginBottom:3}}>Data limite</label>
+              <input id="tDate" type="date" value={tDate} onChange={e=>setTDate(e.target.value)}
+                style={{...selectSt,width:"100%",boxSizing:"border-box"}}/>
+            </div>
+          </div>
+          <button onClick={addTask} style={btnS(accent.grad,"0 4px 14px rgba(99,102,241,.3)")}>
+            <IPlus s={15}/> Adicionar Tarefa
+          </button>
+        </fieldset>
+        <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+          <div style={{position:"relative",flex:1,minWidth:160}}>
+            <ISearch s={14} c={th.muted} style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}/>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar tarefa..."
+              aria-label="Buscar tarefa" style={{...inp,paddingLeft:32}}/>
+          </div>
+          <div>
+            <label htmlFor="fCat" style={{fontSize:10,color:th.muted,display:"block",marginBottom:2}}>Categoria</label>
+            <select id="fCat" value={fCat} onChange={e=>setFCat(e.target.value)} style={selectSt}>
+              {["Todas",...CATS].map(c=><option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="fPri" style={{fontSize:10,color:th.muted,display:"block",marginBottom:2}}>Prioridade</label>
+            <select id="fPri" value={fPri} onChange={e=>setFPri(e.target.value)} style={selectSt}>
+              {["Todas",...PRIS].map(p=><option key={p}>{p}</option>)}
+            </select>
+          </div>
+        </div>
+        {filteredTasks.length===0 ? (
+          <div style={{textAlign:"center",padding:"32px 0",color:th.muted}} role="status">
+            <ICheck s={36} c={th.border} style={{display:"block",margin:"0 auto 10px"}}/>
+            <p style={{fontSize:14,margin:0}}>{tasks.length===0?"Adicione sua primeira tarefa 🎯":"Nenhuma tarefa encontrada."}</p>
+          </div>
+        ) : (
+          <ul style={{listStyle:"none",margin:0,padding:0,display:"flex",flexDirection:"column",gap:8}} role="list" aria-label="Lista de tarefas">
+            {filteredTasks.map(t => (
+              <li key={t.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"12px 14px",borderRadius:14,
+                border:"1.5px solid "+(t.done?"transparent":t.pri==="Alta"?"#fecaca":th.border),
+                background:t.done?th.hover:t.pri==="Alta"?"#fff5f5":th.surface,
+                opacity:t.done?.6:1,transition:"all .2s"}}>
+                <button onClick={()=>toggleTask(t.id)}
+                  aria-label={(t.done?"Reabrir tarefa: ":"Concluir tarefa: ")+t.title}
+                  style={{background:"none",border:"none",cursor:"pointer",color:t.done?accent.val:th.muted,padding:0,display:"flex",marginTop:1,flexShrink:0}}>
+                  {t.done?<ICheck s={20}/>:<ISquare s={20}/>}
+                </button>
+                <div style={{flex:1,minWidth:0}}>
+                  <p style={{margin:"0 0 5px",fontSize:14,fontWeight:500,color:t.done?th.muted:th.text,textDecoration:t.done?"line-through":"none"}}>{t.title}</p>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    <span style={tagS(CAT_S[t.cat].bg,CAT_S[t.cat].c)}>{t.cat}</span>
+                    <span style={tagS(PRI_S[t.pri].bg,PRI_S[t.pri].c)}>{t.pri}</span>
+                    {t.date&&<span style={tagS("#f0f4ff",accent.val)}>{"📅 "+t.date}</span>}
+                  </div>
+                </div>
+                <button onClick={()=>delTask(t.id)} aria-label={"Excluir tarefa: "+t.title}
+                  style={{background:"none",border:"none",cursor:"pointer",color:th.muted,padding:0,display:"flex",flexShrink:0,marginTop:2,transition:"color .2s"}}
+                  onMouseEnter={e=>e.currentTarget.style.color="#f43f5e"}
+                  onMouseLeave={e=>e.currentTarget.style.color=th.muted}>
+                  <ITrash s={15}/>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Planner({ th, accent, calMonth, setCalMonth, calDays, taskDates, weekPlan, setWeekPlan, wpInput, setWpInput, mGoal, setMGoal, mGoalInput, setMGoalInput, toast }) {
+  const card = { background:th.surface, borderRadius:20, border:"1px solid "+th.border, padding:24, marginBottom:16 };
+  const inp  = { width:"100%", padding:"11px 14px", borderRadius:12, border:"1.5px solid "+th.border, fontSize:14, color:th.text, outline:"none", boxSizing:"border-box", background:th.input };
+  const btnS = (bg) => ({ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", background:bg, color:"#fff", borderRadius:12, border:"none", fontSize:14, fontWeight:700, cursor:"pointer" });
+  const { y, m } = calMonth;
+  const { first, days } = calDays;
+  const monthName = new Date(y,m,1).toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
+  const todayStr  = new Date().toLocaleDateString("pt-BR");
+  const cells = [];
+  for (let i=0;i<first;i++) cells.push(null);
+  for (let d=1;d<=days;d++) {
+    const dateStr = new Date(y,m,d).toLocaleDateString("pt-BR");
+    cells.push({ d, dateStr, isToday:dateStr===todayStr, hasTasks:taskDates.has(dateStr) });
+  }
+  const weekDays = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+  const addWpItem = day => {
+    if (!wpInput[day]||!wpInput[day].trim()) return;
+    setWeekPlan(p => ({...p, [day]:[...p[day], wpInput[day].trim()]}));
+    setWpInput(p => ({...p, [day]:""}));
+  };
+  const delWpItem = (day, i) => setWeekPlan(p => ({...p, [day]:p[day].filter((_,j)=>j!==i)}));
+  return (
+    <div className="fade-in">
+      <div style={card}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+          <button aria-label="Mês anterior"
+            onClick={()=>setCalMonth(p=>{const d=new Date(p.y,p.m-1,1);return{y:d.getFullYear(),m:d.getMonth()};})}
+            style={{background:th.hover,border:"1px solid "+th.border,borderRadius:10,padding:"6px 10px",cursor:"pointer",color:th.text,display:"flex",alignItems:"center"}}>
+            <IChevL s={16}/>
+          </button>
+          <h3 style={{fontSize:15,fontWeight:700,color:th.text,textTransform:"capitalize"}}>{monthName}</h3>
+          <button aria-label="Próximo mês"
+            onClick={()=>setCalMonth(p=>{const d=new Date(p.y,p.m+1,1);return{y:d.getFullYear(),m:d.getMonth()};})}
+            style={{background:th.hover,border:"1px solid "+th.border,borderRadius:10,padding:"6px 10px",cursor:"pointer",color:th.text,display:"flex",alignItems:"center"}}>
+            <IChevR s={16}/>
+          </button>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:6}}>
+          {weekDays.map(d=><div key={d} style={{textAlign:"center",fontSize:10,fontWeight:700,color:th.muted,padding:"2px 0"}}>{d}</div>)}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}} role="grid" aria-label="Calendário mensal">
+          {cells.map((c,i) => c===null ? <div key={"e"+i}/> : (
+            <div key={c.d} role="gridcell" aria-label={c.dateStr+(c.hasTasks?" — possui tarefas":"")}
+              style={{position:"relative",textAlign:"center",padding:"6px 2px",borderRadius:8,
+                background:c.isToday?accent.val:c.hasTasks?accent.val+"22":th.hover,
+                color:c.isToday?"#fff":th.text,fontSize:12,fontWeight:c.isToday?700:400,
+                border:"1px solid "+(c.isToday?accent.val:th.border),cursor:"default"}}>
+              {c.d}
+              {c.hasTasks&&!c.isToday&&<span aria-hidden="true" style={{position:"absolute",top:2,right:3,width:5,height:5,borderRadius:"50%",background:accent.val,display:"block"}}/>}
+            </div>
+          ))}
+        </div>
+        <p style={{fontSize:11,color:th.muted,marginTop:10}}>● Dias com tarefas agendadas</p>
+      </div>
+      <div style={card}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+          <ICalendar s={17} c={accent.val}/>
+          <span style={{fontSize:15,fontWeight:700,color:th.text}}>Planejamento Semanal</span>
+        </div>
+        {Object.keys(weekPlan).map(day => (
+          <div key={day} style={{marginBottom:16}}>
+            <p style={{fontSize:12,fontWeight:700,color:accent.val,textTransform:"uppercase",letterSpacing:".06em",marginBottom:6}}>{day}</p>
+            {weekPlan[day].map((item,i) => (
+              <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",borderRadius:10,background:th.hover,border:"1px solid "+th.border,marginBottom:4}}>
+                <span style={{flex:1,fontSize:13,color:th.text}}>{item}</span>
+                <button aria-label={"Remover "+item+" de "+day} onClick={()=>delWpItem(day,i)}
+                  style={{background:"none",border:"none",cursor:"pointer",color:th.muted,padding:0,display:"flex"}}
+                  onMouseEnter={e=>e.currentTarget.style.color="#f43f5e"}
+                  onMouseLeave={e=>e.currentTarget.style.color=th.muted}>
+                  <IX s={13}/>
+                </button>
+              </div>
+            ))}
+            <div style={{display:"flex",gap:6}}>
+              <input value={wpInput[day]||""} onChange={e=>setWpInput(p=>({...p,[day]:e.target.value}))}
+                onKeyDown={e=>{if(e.key==="Enter")addWpItem(day);}}
+                placeholder={"Adicionar para "+day+"..."} aria-label={"Atividade de "+day}
+                style={{...inp,flex:1,padding:"8px 12px",fontSize:13}}/>
+              <button aria-label={"Adicionar em "+day} onClick={()=>addWpItem(day)}
+                style={{...btnS(accent.grad),padding:"8px 14px"}}>
+                <IPlus s={14}/>
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={card}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+          <IStar s={17} c="#f59e0b"/>
+          <span style={{fontSize:15,fontWeight:700,color:th.text}}>Meta Principal do Mês</span>
+        </div>
+        <p style={{fontSize:12,color:th.muted,marginBottom:14}}>{"🗓️ "+new Date().toLocaleDateString("pt-BR",{month:"long",year:"numeric"})}</p>
+        {mGoal ? (
+          <div style={{padding:"14px 16px",borderRadius:14,background:"#fffbeb",border:"1.5px solid #fcd34d",display:"flex",alignItems:"center",gap:10}}>
+            <IStar s={18} c="#f59e0b"/>
+            <p style={{flex:1,fontSize:15,fontWeight:600,color:"#92400e",margin:0}}>{mGoal}</p>
+            <button aria-label="Editar meta do mês" onClick={()=>{setMGoalInput(mGoal);setMGoal("");}}
+              style={{background:"none",border:"none",cursor:"pointer",color:"#f59e0b",padding:0,display:"flex"}}><IEdit s={16}/></button>
+          </div>
+        ) : (
+          <div style={{display:"flex",gap:8}}>
+            <input value={mGoalInput} onChange={e=>setMGoalInput(e.target.value)}
+              onKeyDown={e=>{if(e.key==="Enter"&&mGoalInput.trim()){setMGoal(mGoalInput);setMGoalInput("");toast("Meta do mês salva! 🌟");}}}
+              placeholder="Qual é a sua meta para este mês?" aria-label="Meta do mês" style={{...inp,flex:1}}/>
+            <button aria-label="Salvar meta do mês"
+              onClick={()=>{if(mGoalInput.trim()){setMGoal(mGoalInput);setMGoalInput("");toast("Meta do mês salva! 🌟");}}}
+              style={{...btnS("linear-gradient(135deg,#f59e0b,#fbbf24)"),gap:6}}>
+              <ISave s={15}/> Salvar
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Goals({ th, accent, wGoals, wInput, setWInput, addWGoal, toggleWGoal, delWGoal }) {
+  const card = { background:th.surface, borderRadius:20, border:"1px solid "+th.border, padding:24, marginBottom:16 };
+  const inp  = { width:"100%", padding:"11px 14px", borderRadius:12, border:"1.5px solid "+th.border, fontSize:14, color:th.text, outline:"none", boxSizing:"border-box", background:th.input };
+  const btnS = (bg) => ({ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", background:bg, color:"#fff", borderRadius:12, border:"none", fontSize:14, fontWeight:700, cursor:"pointer" });
+  const wDone = wGoals.filter(g=>g.done).length;
+  const wPct  = wGoals.length ? Math.round((wDone/wGoals.length)*100) : 0;
+  return (
+    <div className="fade-in">
+      <div style={card}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <ITarget s={18} c={accent.val}/>
+            <span style={{fontSize:15,fontWeight:700,color:th.text}}>Metas da Semana</span>
+          </div>
+          {wGoals.length>0 && <Ring pct={wPct} size={52} stroke={5} color={accent.val}/>}
+        </div>
+        <div style={{display:"flex",gap:8,marginBottom:14}}>
+          <input value={wInput} onChange={e=>setWInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addWGoal()}
+            placeholder="Nova meta da semana..." aria-label="Nova meta da semana" style={{...inp,flex:1}}/>
+          <button onClick={addWGoal} style={btnS(accent.grad)}><IPlus s={15}/> Adicionar</button>
+        </div>
+        {wGoals.length===0 ? (
+          <div style={{textAlign:"center",padding:"28px 0",color:th.muted}} role="status">
+            <ITarget s={34} c={th.border} style={{display:"block",margin:"0 auto 10px"}}/>
+            <p style={{fontSize:14,margin:0}}>Defina suas metas para a semana 🎯</p>
+          </div>
+        ) : (
+          <ul style={{listStyle:"none",margin:0,padding:0,display:"flex",flexDirection:"column",gap:8}} role="list" aria-label="Lista de metas">
+            {wGoals.map(g => (
+              <li key={g.id} style={{display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderRadius:14,
+                border:"1.5px solid "+(g.done?"transparent":th.border),
+                background:g.done?th.hover:th.surface,opacity:g.done?.6:1,transition:"all .2s"}}>
+                <button onClick={()=>toggleWGoal(g.id)}
+                  aria-label={(g.done?"Reabrir":"Concluir")+" meta: "+g.text}
+                  style={{background:"none",border:"none",cursor:"pointer",color:g.done?accent.val:th.muted,padding:0,display:"flex",flexShrink:0}}>
+                  {g.done?<ICheck s={20}/>:<ISquare s={20}/>}
+                </button>
+                <span style={{flex:1,fontSize:14,color:g.done?th.muted:th.text,textDecoration:g.done?"line-through":"none"}}>{g.text}</span>
+                <button onClick={()=>delWGoal(g.id)} aria-label={"Excluir meta: "+g.text}
+                  style={{background:"none",border:"none",cursor:"pointer",color:th.muted,padding:0,display:"flex",flexShrink:0}}
+                  onMouseEnter={e=>e.currentTarget.style.color="#f43f5e"}
+                  onMouseLeave={e=>e.currentTarget.style.color=th.muted}>
+                  <ITrash s={15}/>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Journal({ th, accent, mood, draft, setDraft, saveEntry, entries, delEntry }) {
+  const card = { background:th.surface, borderRadius:20, border:"1px solid "+th.border, padding:24, marginBottom:16 };
+  const inp  = { width:"100%", padding:"11px 14px", borderRadius:12, border:"1.5px solid "+th.border, fontSize:14, color:th.text, outline:"none", boxSizing:"border-box", background:th.input };
+  const btnS = (bg,shadow) => ({ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", background:bg, color:"#fff", borderRadius:12, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:shadow||"none" });
+  const tagS = (bg,c) => ({ fontSize:11, padding:"2px 9px", borderRadius:99, fontWeight:600, background:bg, color:c, display:"inline-block" });
+  return (
+    <div className="fade-in">
+      <div style={card}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+          <IBook s={18} c="#2dd4bf"/>
+          <span style={{fontSize:15,fontWeight:700,color:th.text}}>Diário de Desabafo</span>
+        </div>
+        <p style={{fontSize:13,color:th.muted,marginBottom:14}}>Esvazie sua mente antes de estudar ✍️</p>
+        {mood&&<p style={{fontSize:12,color:accent.val,marginBottom:10}}>{"Humor atual: "+mood.emoji+" "+mood.label}</p>}
+        <label htmlFor="journalDraft" style={{fontSize:12,color:th.muted,display:"block",marginBottom:4}}>Escreva livremente, sem julgamentos</label>
+        <textarea id="journalDraft" value={draft} onChange={e=>setDraft(e.target.value)}
+          placeholder="O que está na sua cabeça agora?" rows={5}
+          style={{...inp,resize:"none",lineHeight:1.7,marginBottom:12}}/>
+        <button onClick={saveEntry} style={btnS("linear-gradient(135deg,#2dd4bf,#34d399)","0 4px 14px rgba(45,212,191,.3)")}>
+          <ISave s={15}/> Salvar Relato
+        </button>
+      </div>
+      {entries.length>0 && (
+        <div style={card}>
+          <p style={{fontSize:11,fontWeight:700,color:th.muted,textTransform:"uppercase",letterSpacing:".08em",marginBottom:14}}>Histórico de Relatos</p>
+          <div style={{display:"flex",flexDirection:"column",gap:10}} aria-live="polite">
+            {entries.map(e => (
+              <div key={e.id} className="fade-in" style={{background:"#f0fdfa",border:"1.5px solid #99f6e4",borderRadius:14,padding:16}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+                  <p style={{flex:1,fontSize:14,color:"#334155",lineHeight:1.7,margin:0}}>{e.text}</p>
+                  <button onClick={()=>delEntry(e.id)} aria-label="Excluir relato"
+                    style={{background:"none",border:"none",cursor:"pointer",color:"#a7f3d0",padding:0,flexShrink:0}}
+                    onMouseEnter={ev=>ev.currentTarget.style.color="#f43f5e"}
+                    onMouseLeave={ev=>ev.currentTarget.style.color="#a7f3d0"}>
+                    <ITrash s={14}/>
+                  </button>
+                </div>
+                <div style={{display:"flex",gap:8,marginTop:8,flexWrap:"wrap"}}>
+                  <span style={tagS("#e0fdf4","#0f766e")}>{"📅 "+e.date}</span>
+                  {e.mood!=="—"&&<span style={tagS("#f0f4ff",accent.val)}>{"😊 "+e.mood}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Stats({ th, accent, tasks, moodLog }) {
+  const done    = tasks.filter(t => t.done).length;
+  const total   = tasks.length;
+  const pending = tasks.filter(t => !t.done);
+  const card = { background:th.surface, borderRadius:20, border:"1px solid "+th.border, padding:24, marginBottom:16 };
+
+  const tasksByDay = useMemo(()=>{
+    const map={};
+    tasks.filter(t=>t.done&&t.created).forEach(t=>{map[t.created]=(map[t.created]||0)+1;});
+    return Object.entries(map).sort().slice(-7);
+  },[tasks]);
+
+  const moodStats = useMemo(() => {
+    const counts = {};
+    moodLog.forEach(l => { counts[l.mood.label]=(counts[l.mood.label]||0)+1; });
+    return Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  }, [moodLog]);
+
+  const maxVal = Math.max(...tasksByDay.map(([,v])=>v),1);
+  return (
+    <div className="fade-in">
+      <div style={card}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
+          <IBar s={18} c={accent.val}/>
+          <span style={{fontSize:15,fontWeight:700,color:th.text}}>Histórico de Produtividade</span>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:18}}>
+          {[{l:"Total",v:total,c:accent.val},{l:"Concluídas",v:done,c:"#10b981"},{l:"Pendentes",v:pending.length,c:"#f59e0b"}].map(s=>(
+            <div key={s.l} style={{textAlign:"center",padding:"14px 8px",borderRadius:14,border:"1.5px solid "+th.border,background:th.hover}}>
+              <p style={{fontSize:24,fontWeight:800,color:s.c,margin:"0 0 4px"}}>{s.v}</p>
+              <p style={{fontSize:11,color:th.muted,margin:0}}>{s.l}</p>
+            </div>
+          ))}
+        </div>
+        {tasksByDay.length>0 ? (
+          <>
+            <p style={{fontSize:12,color:th.muted,marginBottom:10}}>Tarefas concluídas por dia (últimos 7 dias)</p>
+            <div style={{display:"flex",gap:6,alignItems:"flex-end",height:80}} role="img" aria-label="Gráfico de barras de produtividade">
+              {tasksByDay.map(([d,v])=>(
+                <div key={d} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                  <div style={{width:"100%",background:accent.grad,borderRadius:"6px 6px 0 0",height:(Math.round((v/maxVal)*64)+8)+"px",transition:"height .5s ease"}}/>
+                  <span style={{fontSize:9,color:th.muted}}>{d.split("/").slice(0,2).join("/")}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p style={{fontSize:13,color:th.muted,textAlign:"center",padding:"16px 0"}}>Nenhuma tarefa concluída ainda.</p>
+        )}
+      </div>
+      <div style={card}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
+          <IHeart s={18} c="#fb7185"/>
+          <span style={{fontSize:15,fontWeight:700,color:th.text}}>Histórico Emocional</span>
+        </div>
+        {moodLog.length===0 ? (
+          <p style={{fontSize:13,color:th.muted,textAlign:"center",padding:"16px 0"}}>Registre seu humor diariamente para ver o histórico.</p>
+        ) : (
+          <>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+              {moodStats.map(([label,cnt])=>{
+                const mm=MOODS.find(x=>x.label===label);
+                return mm ? (
+                  <div key={label} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:10,background:mm.bg,border:"1px solid "+mm.border}}>
+                    <span style={{fontSize:16}}>{mm.emoji}</span>
+                    <span style={{fontSize:12,fontWeight:600,color:mm.text}}>{label}</span>
+                    <span style={{fontSize:11,color:mm.text,opacity:.7}}>{"×"+cnt}</span>
+                  </div>
+                ) : null;
+              })}
+            </div>
+            <p style={{fontSize:11,color:th.muted,textTransform:"uppercase",letterSpacing:".06em",marginBottom:10}}>Últimos registros</p>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {moodLog.slice(0,10).map((l,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:10,background:th.hover,border:"1px solid "+th.border}}>
+                  <span style={{fontSize:18}}>{l.mood.emoji}</span>
+                  <div style={{flex:1}}>
+                    <p style={{fontSize:13,fontWeight:600,color:th.text,margin:0}}>{l.mood.label}</p>
+                    <p style={{fontSize:11,color:th.muted,margin:0}}>{l.date}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════
+   APP — only state & orchestration
+   ══════════════════════════════ */
+function App() {
+  const [darkMode,  setDarkMode]  = useState(false);
+  const [accentIdx, setAccentIdx] = useState(0);
+  const [userName,  setUserName]  = useState("");
+  const [nameInput, setNameInput] = useState("");
+  const accent = ACCENT_COLORS[accentIdx];
+
+  const th = darkMode
+    ? { bg:"#0f172a", surface:"#1e293b", border:"#334155", text:"#e2e8f0", sub:"#94a3b8", muted:"#475569", input:"#1e293b", hover:"#334155" }
+    : { bg:"#f0f4ff", surface:"#fff",    border:"#e0e7ff", text:"#1e293b", sub:"#64748b", muted:"#94a3b8", input:"#fafbff", hover:"#f8faff" };
+
+  useEffect(() => {
+    document.body.style.background = th.bg;
+    document.body.style.color = th.text;
+    document.documentElement.style.setProperty("--accent", accent.val);
+    document.documentElement.style.setProperty("--scrollbar", darkMode ? "#334155" : "#c7d2fe");
+  }, [darkMode, accentIdx]);
+
+  const [page,       setPage]       = useState("dashboard");
+  const [mood,       setMood]       = useState(null);
+  const [moodLog,    setMoodLog]    = useState([]);
+  const [tasks,      setTasks]      = useState([]);
+  const [tTitle,     setTTitle]     = useState("");
+  const [tCat,       setTCat]       = useState("Estudos");
+  const [tPri,       setTPri]       = useState("Alta");
+  const [tDate,      setTDate]      = useState("");
+  const [search,     setSearch]     = useState("");
+  const [fCat,       setFCat]       = useState("Todas");
+  const [fPri,       setFPri]       = useState("Todas");
+  const [draft,      setDraft]      = useState("");
+  const [entries,    setEntries]    = useState([]);
+  const [wGoals,     setWGoals]     = useState([]);
+  const [mGoal,      setMGoal]      = useState("");
+  const [mGoalInput, setMGoalInput] = useState("");
+  const [wInput,     setWInput]     = useState("");
+  const [weekPlan,   setWeekPlan]   = useState({ Seg:[], Ter:[], Qua:[], Qui:[], Sex:[], Sáb:[], Dom:[] });
+  const [wpInput,    setWpInput]    = useState({});
+  const [calMonth,   setCalMonth]   = useState(() => { const d=new Date(); return {y:d.getFullYear(),m:d.getMonth()}; });
+  const [sosOpen,      setSosOpen]      = useState(false);
+  const [pIdx,         setPIdx]         = useState(null);
+  const [count,        setCount]        = useState(0);
+  const [cycles,       setCycles]       = useState(0);
+  const [toasts,       setToasts]       = useState([]);
+  const [confirm,      setConfirm]      = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showHelp,     setShowHelp]     = useState(false);
+  const [onboarding,   setOnboarding]   = useState(true);
+  const [obStep,       setObStep]       = useState(0);
+
+  const timerRef   = useRef(null);
+  const stRef      = useRef({});
+  const motivIdx   = useRef(Math.floor(Math.random()*MOTIVATIONAL.length));
+  const toastIdRef = useRef(0);
+
+  const toast = useCallback((msg, type="success") => {
+    const id = ++toastIdRef.current;
+    setToasts(p => [...p, { id, msg, type, out:false }]);
+    setTimeout(() => setToasts(p => p.map(t => t.id===id ? {...t, out:true} : t)), 3200);
+    setTimeout(() => setToasts(p => p.filter(t => t.id!==id)), 3700);
+  }, []);
+
+  const askConfirm = useCallback((msg, onOk) => setConfirm({ msg, onOk }), []);
+
+  const filteredTasks = useMemo(() => {
+    let arr = [...tasks];
+    if (fCat!=="Todas") arr = arr.filter(t => t.cat===fCat);
+    if (fPri!=="Todas") arr = arr.filter(t => t.pri===fPri);
+    if (search.trim()) arr = arr.filter(t => t.title.toLowerCase().includes(search.toLowerCase()));
+    return arr.sort((a,b) => {
+      if (a.done!==b.done) return a.done?1:-1;
+      return PRI_ORDER[a.pri]-PRI_ORDER[b.pri];
+    });
+  }, [tasks, fCat, fPri, search]);
+
+  const calDays = useMemo(() => {
+    const { y, m } = calMonth;
+    const first = new Date(y, m, 1).getDay();
+    const days  = new Date(y, m+1, 0).getDate();
+    return { first, days };
+  }, [calMonth]);
+
+  const taskDates = useMemo(() => {
+    const s = new Set();
+    tasks.forEach(t => { if (t.date) s.add(t.date); });
+    return s;
+  }, [tasks]);
+
+  const selectMood = m => {
+    setMood(m);
+    if (m) setMoodLog(p => [{ mood:m, date:nowStr(), day:todayKey() }, ...p.slice(0,29)]);
+  };
+
+  const addTask = () => {
+    if (!tTitle.trim()) { toast("Digite o título da tarefa.", "error"); return; }
+    setTasks(p => [...p, { id:Date.now(), title:tTitle.trim(), cat:tCat, pri:tPri, date:tDate, done:false, created:todayKey() }]);
+    setTTitle(""); setTDate("");
+    toast("Tarefa criada com sucesso! ✅");
+  };
+  const toggleTask = id => setTasks(p => p.map(t => t.id===id ? {...t, done:!t.done} : t));
+  const delTask    = id => askConfirm("Deseja realmente excluir esta tarefa?", () => {
+    setTasks(p => p.filter(t => t.id!==id));
+    toast("Tarefa excluída.");
+  });
+
+  const saveEntry = () => {
+    if (!draft.trim()) { toast("Escreva algo antes de salvar.", "error"); return; }
+    setEntries(p => [{ id:Date.now(), text:draft.trim(), mood:mood?mood.label:"—", date:nowStr() }, ...p]);
+    setDraft(""); toast("Relato salvo! 📖");
+  };
+  const delEntry = id => askConfirm("Deseja excluir este relato do diário?", () => {
+    setEntries(p => p.filter(e => e.id!==id));
+    toast("Relato excluído.");
+  });
+
+  const addWGoal    = () => { if (!wInput.trim()) return; setWGoals(p => [...p, {id:Date.now(),text:wInput.trim(),done:false}]); setWInput(""); toast("Meta adicionada! 🎯"); };
+  const toggleWGoal = id => setWGoals(p => p.map(g => g.id===id ? {...g,done:!g.done} : g));
+  const delWGoal    = id => askConfirm("Excluir esta meta?", () => { setWGoals(p => p.filter(g => g.id!==id)); toast("Meta excluída."); });
+
+  const startBreath = () => {
+    clearInterval(timerRef.current);
+    const s = {pIdx:0, cd:PHASES[0].dur, cycles:0};
+    stRef.current = s;
+    setPIdx(0); setCount(PHASES[0].dur); setCycles(0);
+    timerRef.current = setInterval(() => {
+      s.cd -= 1;
+      if (s.cd<=0) {
+        s.pIdx = (s.pIdx+1)%PHASES.length;
+        if (s.pIdx===0) { s.cycles+=1; setCycles(s.cycles); }
+        s.cd = PHASES[s.pIdx].dur;
+        setPIdx(s.pIdx);
+      }
+      setCount(s.cd);
+    }, 1000);
+  };
+  const stopBreath = () => { clearInterval(timerRef.current); setPIdx(null); setCount(0); };
+  const closeSOS   = () => { stopBreath(); setSosOpen(false); };
+  const curPh = pIdx!==null ? PHASES[pIdx] : null;
+  const sz = curPh ? (curPh.id==="expire"?72:152) : 104;
+  const tr = curPh ? (curPh.id==="inspire"?4:curPh.id==="expire"?8:.4) : .5;
+
+  const finishOnboarding = () => {
+    setOnboarding(false);
+    if (nameInput.trim()) setUserName(nameInput.trim());
+  };
+
+  const btnS = (bg, shadow) => ({ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", background:bg, color:"#fff", borderRadius:12, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:shadow||"none" });
+
+  const renderPage = () => {
+    switch(page) {
+      case "dashboard": return <Dashboard th={th} accent={accent} mood={mood} tasks={tasks} wGoals={wGoals} userName={userName} selectMood={selectMood} toggleTask={toggleTask} MOTIVATIONAL={MOTIVATIONAL} motivIdx={motivIdx.current}/>;
+      case "tasks":     return <Tasks th={th} accent={accent} tasks={tasks} tTitle={tTitle} setTTitle={setTTitle} tCat={tCat} setTCat={setTCat} tPri={tPri} setTPri={setTPri} tDate={tDate} setTDate={setTDate} search={search} setSearch={setSearch} fCat={fCat} setFCat={setFCat} fPri={fPri} setFPri={setFPri} addTask={addTask} toggleTask={toggleTask} delTask={delTask} filteredTasks={filteredTasks}/>;
+      case "plan":      return <Planner th={th} accent={accent} calMonth={calMonth} setCalMonth={setCalMonth} calDays={calDays} taskDates={taskDates} weekPlan={weekPlan} setWeekPlan={setWeekPlan} wpInput={wpInput} setWpInput={setWpInput} mGoal={mGoal} setMGoal={setMGoal} mGoalInput={mGoalInput} setMGoalInput={setMGoalInput} toast={toast}/>;
+      case "goals":     return <Goals th={th} accent={accent} wGoals={wGoals} wInput={wInput} setWInput={setWInput} addWGoal={addWGoal} toggleWGoal={toggleWGoal} delWGoal={delWGoal}/>;
+      case "journal":   return <Journal th={th} accent={accent} mood={mood} draft={draft} setDraft={setDraft} saveEntry={saveEntry} entries={entries} delEntry={delEntry}/>;
+      case "stats":     return <Stats th={th} accent={accent} tasks={tasks} moodLog={moodLog}/>;
+      default:          return null;
+    }
+  };
+
+  return (
+    <>
+      <a href="#main-content" style={{position:"absolute",left:-9999,top:0,padding:"8px 16px",background:accent.val,color:"#fff",borderRadius:"0 0 8px 0",fontWeight:700,fontSize:14,zIndex:999,textDecoration:"none"}}
+        onFocus={e=>{e.target.style.left="0"}} onBlur={e=>{e.target.style.left="-9999px"}}>
+        Pular para o conteúdo
+      </a>
+
+      {/* Toasts */}
+      <div aria-live="assertive" aria-atomic="true" style={{position:"fixed",top:16,right:16,zIndex:1000,display:"flex",flexDirection:"column",gap:8,pointerEvents:"none"}}>
+        {toasts.map(t=>(
+          <div key={t.id} role="status" style={{
+            padding:"12px 18px",borderRadius:12,fontSize:13,fontWeight:600,color:"#fff",
+            background:t.type==="error"?"#f43f5e":"#10b981",
+            boxShadow:"0 4px 20px rgba(0,0,0,.18)",pointerEvents:"auto",
+            animation:t.out?"toastOut .4s ease forwards":"toastIn .3s ease both",
+            display:"flex",alignItems:"center",gap:8,maxWidth:280
+          }}>
+            {t.type==="error"?<IAlert s={15} c="#fff"/>:<IOk s={15} c="#fff"/>}
+            {t.msg}
+          </div>
+        ))}
+      </div>
+
+      {/* Confirm */}
+      {confirm && (
+        <div role="alertdialog" aria-modal="true" aria-label="Confirmação"
+          style={{position:"fixed",inset:0,background:"rgba(15,23,42,.55)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:900,padding:20}}>
+          <div className="scale-in" style={{background:th.surface,borderRadius:20,padding:28,maxWidth:320,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,.2)",textAlign:"center"}}>
+            <IAlert s={32} c="#f59e0b" style={{display:"block",margin:"0 auto 14px"}}/>
+            <p style={{fontSize:15,fontWeight:600,color:th.text,marginBottom:20,lineHeight:1.5}}>{confirm.msg}</p>
+            <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+              <button onClick={()=>setConfirm(null)} style={{padding:"10px 22px",borderRadius:10,border:"1.5px solid "+th.border,background:th.hover,color:th.text,fontSize:14,fontWeight:600,cursor:"pointer"}}>Cancelar</button>
+              <button autoFocus onClick={()=>{confirm.onOk();setConfirm(null);}} style={{padding:"10px 22px",borderRadius:10,border:"none",background:"#f43f5e",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>Excluir</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Onboarding */}
+      {onboarding && (
+        <div role="dialog" aria-modal="true" aria-label="Boas-vindas ao OrganizaMente"
+          style={{position:"fixed",inset:0,background:"rgba(15,23,42,.65)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:800,padding:20}}>
+          <div className="slide-up" style={{background:th.surface,borderRadius:28,padding:36,maxWidth:400,width:"100%",boxShadow:"0 24px 64px rgba(0,0,0,.25)",textAlign:"center"}}>
+            {obStep===0 ? (
+              <>
+                <div style={{width:56,height:56,borderRadius:18,background:accent.grad,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 18px",boxShadow:"0 6px 20px "+accent.val+"44"}}>
+                  <IBrain s={26} c="#fff"/>
+                </div>
+                <h2 style={{fontSize:22,fontWeight:800,color:th.text,marginBottom:8}}>Bem-vindo ao OrganizaMente! 🧠</h2>
+                <p style={{fontSize:14,color:th.sub,lineHeight:1.7,marginBottom:20}}>Sua ferramenta de organização e saúde mental para estudantes universitários.</p>
+                <div style={{marginBottom:24}}>
+                  <label htmlFor="onbName" style={{fontSize:13,color:th.sub,display:"block",marginBottom:8}}>Como posso te chamar?</label>
+                  <input id="onbName" value={nameInput} onChange={e=>setNameInput(e.target.value)}
+                    placeholder="Seu nome (opcional)"
+                    style={{width:"100%",padding:"11px 14px",borderRadius:12,border:"1.5px solid "+th.border,fontSize:14,color:th.text,outline:"none",boxSizing:"border-box",background:th.input,textAlign:"center"}}/>
+                </div>
+                <button onClick={()=>setObStep(1)} style={{...btnS(accent.grad,"0 4px 16px rgba(99,102,241,.3)"),width:"100%",justifyContent:"center",fontSize:15}}>
+                  Ver tour rápido →
+                </button>
+                <button onClick={finishOnboarding} style={{marginTop:10,background:"none",border:"none",cursor:"pointer",color:th.muted,fontSize:13,textDecoration:"underline"}}>
+                  Pular e começar
+                </button>
+              </>
+            ) : (
+              <>
+                <div style={{fontSize:40,marginBottom:10}}>{ONBOARDING_STEPS[obStep-1].emoji}</div>
+                <h3 style={{fontSize:19,fontWeight:800,color:th.text,marginBottom:8}}>{ONBOARDING_STEPS[obStep-1].title}</h3>
+                <p style={{fontSize:14,color:th.sub,lineHeight:1.7,marginBottom:24}}>{ONBOARDING_STEPS[obStep-1].desc}</p>
+                <div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:20}}>
+                  {ONBOARDING_STEPS.map((_,i)=>(
+                    <div key={i} style={{width:i===obStep-1?20:7,height:7,borderRadius:99,background:i===obStep-1?accent.val:th.border,transition:"all .3s"}}/>
+                  ))}
+                </div>
+                <div style={{display:"flex",gap:10}}>
+                  {obStep>1&&<button onClick={()=>setObStep(s=>s-1)} style={{flex:1,padding:"11px 0",borderRadius:12,border:"1.5px solid "+th.border,background:th.hover,color:th.text,fontSize:14,fontWeight:600,cursor:"pointer"}}>← Anterior</button>}
+                  {obStep<ONBOARDING_STEPS.length ? (
+                    <button onClick={()=>setObStep(s=>s+1)} style={{...btnS(accent.grad),flex:1,justifyContent:"center",fontSize:14}}>Próximo →</button>
+                  ) : (
+                    <button onClick={finishOnboarding} style={{...btnS(accent.grad),flex:1,justifyContent:"center",fontSize:14}}>Começar! 🚀</button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Settings */}
+      {showSettings && (
+        <div role="dialog" aria-modal="true" aria-label="Configurações"
+          style={{position:"fixed",inset:0,background:"rgba(15,23,42,.5)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:700,padding:20}}>
+          <div className="scale-in" style={{background:th.surface,borderRadius:24,padding:32,maxWidth:360,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,.2)"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:24}}>
+              <h3 style={{fontSize:17,fontWeight:800,color:th.text}}>⚙️ Configurações</h3>
+              <button aria-label="Fechar configurações" onClick={()=>setShowSettings(false)}
+                style={{background:th.hover,border:"none",cursor:"pointer",color:th.muted,width:32,height:32,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <IX s={15}/>
+              </button>
+            </div>
+            <p style={{fontSize:12,fontWeight:700,color:th.muted,textTransform:"uppercase",letterSpacing:".06em",marginBottom:10}}>Aparência</p>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderRadius:14,background:th.hover,border:"1px solid "+th.border,marginBottom:16}}>
+              <span style={{fontSize:14,color:th.text}}>{"Modo "+(darkMode?"Escuro 🌙":"Claro ☀️")}</span>
+              <button aria-label={"Ativar modo "+(darkMode?"claro":"escuro")} onClick={()=>setDarkMode(d=>!d)}
+                style={{width:48,height:26,borderRadius:99,background:darkMode?accent.val:th.border,border:"none",cursor:"pointer",position:"relative",transition:"background .3s"}}>
+                <div style={{width:20,height:20,borderRadius:99,background:"#fff",position:"absolute",top:3,left:darkMode?25:3,transition:"left .3s",boxShadow:"0 1px 4px rgba(0,0,0,.2)"}}/>
+              </button>
+            </div>
+            <p style={{fontSize:12,fontWeight:700,color:th.muted,textTransform:"uppercase",letterSpacing:".06em",marginBottom:10}}>Cor Principal</p>
+            <div style={{display:"flex",gap:10,marginBottom:20}} role="group" aria-label="Escolher cor principal">
+              {ACCENT_COLORS.map((c,i)=>(
+                <button key={c.name} aria-label={c.name} aria-pressed={accentIdx===i}
+                  onClick={()=>setAccentIdx(i)}
+                  style={{width:36,height:36,borderRadius:99,background:c.grad,border:"3px solid "+(accentIdx===i?"#fff":"transparent"),cursor:"pointer",
+                    boxShadow:accentIdx===i?"0 0 0 2px "+c.val:"none",transition:"all .2s"}}/>
+              ))}
+            </div>
+            <p style={{fontSize:12,fontWeight:700,color:th.muted,textTransform:"uppercase",letterSpacing:".06em",marginBottom:8}}>Saudação</p>
+            <div style={{display:"flex",gap:8}}>
+              <input value={nameInput||userName} onChange={e=>setNameInput(e.target.value)}
+                placeholder="Seu nome" aria-label="Seu nome"
+                style={{flex:1,padding:"11px 14px",borderRadius:12,border:"1.5px solid "+th.border,fontSize:14,color:th.text,outline:"none",boxSizing:"border-box",background:th.input}}/>
+              <button onClick={()=>{if(nameInput.trim()){setUserName(nameInput.trim());toast("Nome salvo! 👋");}}}
+                style={btnS(accent.grad)}><ISave s={15}/></button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Help */}
+      {showHelp && (
+        <div role="dialog" aria-modal="true" aria-label="Ajuda e documentação"
+          style={{position:"fixed",inset:0,background:"rgba(15,23,42,.5)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:700,padding:20,overflowY:"auto"}}>
+          <div className="scale-in" style={{background:th.surface,borderRadius:24,padding:32,maxWidth:400,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,.2)",margin:"auto"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+              <h3 style={{fontSize:17,fontWeight:800,color:th.text}}>❓ Ajuda</h3>
+              <button aria-label="Fechar ajuda" onClick={()=>setShowHelp(false)}
+                style={{background:th.hover,border:"none",cursor:"pointer",color:th.muted,width:32,height:32,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <IX s={15}/>
+              </button>
+            </div>
+            {ONBOARDING_STEPS.map(s=>(
+              <div key={s.title} style={{display:"flex",gap:12,padding:"12px 0",borderBottom:"1px solid "+th.border}}>
+                <span style={{fontSize:24,flexShrink:0}}>{s.emoji}</span>
+                <div>
+                  <p style={{fontSize:14,fontWeight:700,color:th.text,margin:"0 0 3px"}}>{s.title}</p>
+                  <p style={{fontSize:13,color:th.sub,margin:0,lineHeight:1.5}}>{s.desc}</p>
+                </div>
+              </div>
+            ))}
+            <button onClick={()=>{setShowHelp(false);setOnboarding(true);setObStep(1);}}
+              style={{...btnS(accent.grad,"0 4px 14px rgba(99,102,241,.2)"),marginTop:20,width:"100%",justifyContent:"center"}}>
+              Rever tutorial completo
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* SOS */}
+      {sosOpen && (
+        <div role="dialog" aria-modal="true" aria-label="Exercício de respiração 4-7-8"
+          style={{position:"fixed",inset:0,background:"rgba(15,23,42,.55)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:600,padding:20}}>
+          <div className="scale-in" style={{background:th.surface,borderRadius:28,boxShadow:"0 24px 64px rgba(0,0,0,.2)",width:"100%",maxWidth:360,padding:36,textAlign:"center",position:"relative"}}>
+            <button onClick={closeSOS} aria-label="Fechar respiração"
+              style={{position:"absolute",top:14,right:14,background:th.hover,border:"none",cursor:"pointer",color:th.muted,width:32,height:32,borderRadius:99,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <IX s={15}/>
+            </button>
+            <div style={{width:48,height:48,borderRadius:16,background:accent.grad,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",boxShadow:"0 4px 18px "+accent.val+"55"}}>
+              <IWind s={22} c="#fff"/>
+            </div>
+            <h3 style={{fontSize:20,fontWeight:800,color:th.text,margin:"0 0 4px"}}>Respiração 4-7-8</h3>
+            <p style={{fontSize:13,color:th.muted,margin:"0 0 4px"}}>Técnica para acalmar a mente e o corpo</p>
+            {cycles>0&&<p style={{fontSize:13,color:"#10b981",fontWeight:700,margin:"6px 0 0"}} aria-live="polite">{"✅ "+cycles+" ciclo"+(cycles>1?"s":"")+" concluído"+(cycles>1?"s":"")}</p>}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",margin:"26px 0"}}>
+              <div aria-live="polite" aria-label={curPh ? curPh.label+": "+count+" segundos" : "Pronto para começar"}
+                style={{width:sz,height:sz,borderRadius:"50%",background:"linear-gradient(135deg,#818cf8,#2dd4bf)",
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  boxShadow:"0 8px 36px rgba(99,102,241,.35)",
+                  transition:"width "+tr+"s ease-in-out, height "+tr+"s ease-in-out"}}>
+                <span style={{fontSize:curPh?40:28,fontWeight:800,color:"#fff"}}>{curPh?count:"🌬️"}</span>
+              </div>
+            </div>
+            {curPh ? (
+              <div style={{marginBottom:18}}>
+                <p style={{fontSize:20,fontWeight:800,color:th.text,margin:"0 0 4px"}}>{curPh.label}</p>
+                <p style={{fontSize:13,color:th.muted,margin:"0 0 14px"}}>{curPh.hint}</p>
+                <div style={{background:th.border,borderRadius:999,height:6,overflow:"hidden"}} role="progressbar" aria-valuenow={Math.round((count/curPh.dur)*100)} aria-valuemin={0} aria-valuemax={100}>
+                  <div style={{height:"100%",background:"linear-gradient(90deg,#818cf8,#2dd4bf)",width:((count/curPh.dur)*100)+"%",transition:"width 1s linear"}}/>
+                </div>
+              </div>
+            ) : (
+              <p style={{fontSize:14,color:th.muted,marginBottom:18}}>Pressione Começar e siga as instruções.</p>
+            )}
+            {pIdx===null ? (
+              <button onClick={startBreath}
+                style={{width:"100%",padding:"14px 0",background:accent.grad,color:"#fff",borderRadius:14,border:"none",fontSize:15,fontWeight:700,cursor:"pointer",boxShadow:"0 4px 16px "+accent.val+"44"}}>
+                Começar
+              </button>
+            ) : (
+              <button onClick={stopBreath}
+                style={{width:"100%",padding:"14px 0",background:th.hover,color:th.sub,borderRadius:14,border:"1px solid "+th.border,fontSize:15,fontWeight:700,cursor:"pointer"}}>
+                Pausar
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
+      <header style={{background:darkMode?"rgba(30,41,59,.95)":"rgba(255,255,255,.92)",backdropFilter:"blur(16px)",borderBottom:"1px solid "+th.border,position:"sticky",top:0,zIndex:30}}>
+        <div style={{maxWidth:640,margin:"0 auto",padding:"12px 16px",display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:42,height:42,borderRadius:14,background:accent.grad,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 4px 14px "+accent.val+"44"}}>
+            <IBrain s={20} c="#fff"/>
+          </div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:19,fontWeight:800,color:th.text,letterSpacing:"-.5px"}}>OrganizaMente</div>
+            <div style={{fontSize:11,color:th.muted}}>Organização e saúde mental para estudantes</div>
+          </div>
+          <button aria-label="Ajuda" onClick={()=>setShowHelp(true)}
+            style={{background:"none",border:"1px solid "+th.border,borderRadius:10,padding:"6px 8px",cursor:"pointer",color:th.sub,display:"flex",alignItems:"center"}}>
+            <IHelp s={17}/>
+          </button>
+          <button aria-label={darkMode?"Ativar modo claro":"Ativar modo escuro"} onClick={()=>setDarkMode(d=>!d)}
+            style={{background:"none",border:"1px solid "+th.border,borderRadius:10,padding:"6px 8px",cursor:"pointer",color:th.sub,display:"flex",alignItems:"center"}}>
+            {darkMode?<ISun s={17}/>:<IMoon s={17}/>}
+          </button>
+          <button aria-label="Configurações" onClick={()=>setShowSettings(true)}
+            style={{background:"none",border:"1px solid "+th.border,borderRadius:10,padding:"6px 8px",cursor:"pointer",color:th.sub,display:"flex",alignItems:"center"}}>
+            <ISettings s={17}/>
+          </button>
+        </div>
+      </header>
+
+      {/* Nav */}
+      <nav role="navigation" aria-label="Navegação principal"
+        style={{background:darkMode?"rgba(30,41,59,.95)":"rgba(255,255,255,.92)",backdropFilter:"blur(16px)",borderBottom:"1px solid "+th.border,position:"sticky",top:66,zIndex:29,overflowX:"auto"}}>
+        <div style={{maxWidth:640,margin:"0 auto",padding:"0 16px",display:"flex",gap:2}}>
+          {NAV.map(n=>(
+            <button key={n.id} aria-current={page===n.id?"page":undefined}
+              onClick={()=>setPage(n.id)}
+              style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"10px 12px",
+                background:"none",border:"none",cursor:"pointer",
+                borderBottom:"3px solid "+(page===n.id?accent.val:"transparent"),
+                color:page===n.id?accent.val:th.muted,transition:"all .2s",whiteSpace:"nowrap",fontSize:10,fontWeight:page===n.id?700:500}}>
+              <span style={{fontSize:16}}>{n.emoji}</span>
+              {n.label}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* Main */}
+      <main id="main-content" style={{maxWidth:640,margin:"0 auto",padding:"20px 16px 120px"}} role="main">
+        {renderPage()}
+      </main>
+
+      {/* Footer */}
+      <footer style={{textAlign:"center",padding:"0 16px 28px"}} role="contentinfo">
+        <p style={{fontSize:11,color:th.muted,margin:"0 0 3px"}}>Projeto Acadêmico · ADS · Universidade São Judas Tadeu</p>
+        <p style={{fontSize:10,color:th.muted,margin:0,opacity:.7}}>Kathleen Lohanny · Kauã Santana · Lauanda Jones · Rayanne Raquel · Richard Rosa</p>
+      </footer>
+
+      {/* SOS Button */}
+      <div style={{position:"fixed",bottom:24,right:16,zIndex:40}}>
+        <button onClick={()=>setSosOpen(true)} aria-label="Abrir exercício de respiração SOS"
+          style={{display:"flex",alignItems:"center",gap:8,padding:"13px 22px",
+            background:"linear-gradient(135deg,#f43f5e,#fb7185)",color:"#fff",borderRadius:999,
+            border:"none",fontSize:13,fontWeight:700,cursor:"pointer",
+            boxShadow:"0 6px 24px rgba(244,63,94,.45)",animation:"pulse-sos 2s infinite"}}>
+          <IWind s={16}/> SOS – Respira
+        </button>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
